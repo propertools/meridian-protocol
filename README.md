@@ -23,7 +23,7 @@ It does not reinvent WARC, IPFS, WebSub, or DNSSEC. It composes them. It adds wh
 [`draft-darley-meridian-protocol-01.txt`](./draft-darley-meridian-protocol-01.txt)
 
 Intended status: Proposed Standard
-Expires: 2026-09-22
+Expires: 2026-09-27
 
 ---
 
