@@ -1,6 +1,6 @@
 Internet-Draft                                                 T. Darley
 Intended status: Proposed Standard                      Proper Tools SRL
-Expires: 2026-09-26                                        26 March 2026
+Expires: 2026-09-27                                        27 March 2026
 
 
                     The Meridian Protocol
