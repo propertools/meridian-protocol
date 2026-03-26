@@ -57,4 +57,14 @@ And to the memory of **Aaron Swartz** (1986–2013), who believed that knowledge
 
 ---
 
+## License
+
+The Meridian Protocol specification text is subject to the IETF Trust's legal provisions per BCP 78, as stated in the document itself.
+
+This repository — including the README, CONTRIBUTING guide, and any supporting materials — is licensed under the [MIT License](./LICENSE).
+
+Implementations of the protocol are not subject to any license from this repository. You are free to implement Meridian in any language, under any license, without restriction.
+
+---
+
 *Trey Darley · Proper Tools SRL · Brussels*
