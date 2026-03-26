@@ -65,7 +65,7 @@ Status of This Memo
    reference documents or to cite them other than as "work in
    progress."
 
-   This Internet-Draft will expire on 22 September 2026.
+   This Internet-Draft will expire on 27 September 2026.
 
 
 Copyright Notice
