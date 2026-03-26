@@ -1,0 +1,846 @@
+Internet-Draft                                                 T. Darley
+Intended status: Proposed Standard                      Proper Tools SRL
+Expires: 2026-09-26                                        26 March 2026
+
+
+                    The Meridian Protocol
+       Web Preservation, Mirroring, and DNS Failover
+              draft-darley-meridian-protocol-01
+
+
+Dedication
+
+   This document is dedicated to the memory of William Dana Atkinson
+   (1951-2025), creator of HyperCard, who demonstrated that ordinary
+   people could author rich, navigable hypermedia systems and who gave
+   his creation to the world without reservation.  Meridian is, in
+   part, an attempt to provide the missing network-layer continuity for
+   that vision -- and to ensure that works like his own photographic
+   archive remain reachable at the addresses where he placed them.  The
+   network layer Bill wished he had built is long overdue.
+
+   This document is also dedicated to the memory of Aaron Swartz
+   (1986–2013), who believed that knowledge on the web should be
+   free and permanent, and paid for that belief.
+
+
+Abstract
+
+   The World Wide Web has no native mechanism for site preservation,
+   authorized mirroring, or graceful continuation after a site's origin
+   server goes dark.  When a domain lapses, a server is decommissioned,
+   or an author dies, content that may constitute significant cultural,
+   scientific, or artistic heritage disappears from its canonical URLs
+   without recourse.
+
+   This document defines the Meridian Protocol: a composition of a
+   signed site manifest format, a delta-synchronization mechanism, and
+   a DNS resource record type (MIRROR RR) that together enable authors
+   to prospectively authorize preservation of their sites, mirror
+   operators to maintain cryptographically verifiable copies, and
+   resolution or connection mechanisms to transparently fail over to
+   live mirrors when an origin becomes unavailable.
+
+   Meridian does not replace existing archival infrastructure.  It
+   composes with WARC [WARC], WebSub [RFC8030], IPFS content
+   addressing, and DNSSEC [RFC4033], deferring to each where
+   appropriate, and adding only what is genuinely new: the prospective
+   consent model, the signed manifest format, and the failover
+   semantics.
+
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current
+   Internet-Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six
+   months and may be updated, replaced, or obsoleted by other documents
+   at any time.  It is inappropriate to use Internet-Drafts as
+   reference documents or to cite them other than as "work in
+   progress."
+
+   This Internet-Draft will expire on 22 September 2026.
+
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents
+   (https://trustee.ietf.org/license-info) in effect on the date of
+   publication of this document.  Please review these documents
+   carefully, as they describe your rights and restrictions with
+   respect to this document.
+
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . .  4
+     1.1.  Motivation  . . . . . . . . . . . . . . . . . . . . . .  4
+     1.2.  Design Philosophy . . . . . . . . . . . . . . . . . . .  4
+     1.3.  Terminology . . . . . . . . . . . . . . . . . . . . . .  5
+   2.  Protocol Overview . . . . . . . . . . . . . . . . . . . . .  6
+   3.  The Preservation Manifest . . . . . . . . . . . . . . . . .  7
+     3.1.  Well-Known Endpoint . . . . . . . . . . . . . . . . . .  7
+     3.2.  Manifest Format . . . . . . . . . . . . . . . . . . . .  7
+     3.3.  Asset Graph . . . . . . . . . . . . . . . . . . . . . .  9
+     3.4.  Manifest Signing  . . . . . . . . . . . . . . . . . . . 10
+     3.5.  Succession Terms  . . . . . . . . . . . . . . . . . . . 11
+   4.  Delta Synchronization . . . . . . . . . . . . . . . . . . . 12
+     4.1.  Merkle Tree Construction  . . . . . . . . . . . . . . . 12
+     4.2.  Notification via WebSub . . . . . . . . . . . . . . . . 12
+     4.3.  Mirror Pull Semantics . . . . . . . . . . . . . . . . . 13
+   5.  The MIRROR DNS Resource Record  . . . . . . . . . . . . . . 13
+     5.1.  MIRROR RR Format  . . . . . . . . . . . . . . . . . . . 13
+     5.2.  Liveness Detection  . . . . . . . . . . . . . . . . . . 15
+     5.3.  Failover Trigger Conditions . . . . . . . . . . . . . . 15
+     5.4.  Mirror Chain Priority . . . . . . . . . . . . . . . . . 16
+     5.5.  Interaction with DNSSEC . . . . . . . . . . . . . . . . 16
+     5.6.  Deployment Considerations . . . . . . . . . . . . . . . 17
+   6.  Mirror Operator Responsibilities  . . . . . . . . . . . . . 17
+     6.1.  Verification Requirements . . . . . . . . . . . . . . . 17
+     6.2.  Content Integrity . . . . . . . . . . . . . . . . . . . 18
+     6.3.  Succession Handling . . . . . . . . . . . . . . . . . . 18
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . 19
+     7.1.  Key Management  . . . . . . . . . . . . . . . . . . . . 19
+     7.2.  Mirror Substitution Attacks . . . . . . . . . . . . . . 19
+     7.3.  Premature Failover  . . . . . . . . . . . . . . . . . . 20
+     7.4.  Privacy . . . . . . . . . . . . . . . . . . . . . . . . 20
+   8.  IANA Considerations . . . . . . . . . . . . . . . . . . . . 21
+     8.1.  Well-Known URI Registration . . . . . . . . . . . . . . 21
+     8.2.  MIRROR RR Type Assignment . . . . . . . . . . . . . . . 21
+     8.3.  Media Type Registration . . . . . . . . . . . . . . . . 21
+   9.  Prior Art and Related Work  . . . . . . . . . . . . . . . . 22
+   10. References  . . . . . . . . . . . . . . . . . . . . . . . . 23
+     10.1. Normative References  . . . . . . . . . . . . . . . . . 23
+     10.2. Informative References  . . . . . . . . . . . . . . . . 24
+   11. Acknowledgements  . . . . . . . . . . . . . . . . . . . . . 25
+   12. Author's Address  . . . . . . . . . . . . . . . . . . . . . 25
+
+
+1.  Introduction
+
+1.1.  Motivation
+
+   The web routinely loses content.  Domain registrations lapse.
+   Hosting agreements expire.  Authors die.  Institutions are
+   dissolved.  In each case, content that may be irreplaceable --
+   artistic works, scientific data, personal archives, cultural records
+   -- vanishes from its canonical URLs, often without warning and
+   without recourse.
+
+   Existing preservation infrastructure is effective but reactive.  The
+   Internet Archive's Wayback Machine crawls the public web and
+   preserves snapshots, but it operates without author consent or
+   coordination, cannot guarantee completeness, serves content from
+   non-canonical URLs, and has no mechanism for authors to specify
+   preservation intent prospectively.
+
+
+1.2.  Design Philosophy
+
+   Meridian is designed around five principles:
+
+   Composability.  Meridian does not redefine cryptographic signing,
+      content addressing, archive formats, or feed syndication.  It
+      composes existing standards and defers to them.
+
+   Author sovereignty.  Preservation is opt-in and author-directed.
+      An author's signed manifest is the authoritative statement of
+      what may be mirrored, by whom, and under what terms.
+
+   Prospective consent.  Authors publish preservation intent while
+      their sites are live.  Mirrors are authorized before they are
+      needed.  Failover is automatic and deterministic.
+
+   Cryptographic verifiability.  Mirrors cannot silently alter content.
+      Every asset in a preserved site is covered by the author's
+      cryptographic signature.  Clients can verify integrity
+      independently.
+
+   URL continuity.  Preserved content remains accessible under its
+      canonical domain via failover mechanisms.  Users and search
+      engines require no changes.  Links do not break.
+
+
+1.3.  Terminology
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY",
+   and "OPTIONAL" in this document are to be interpreted as described
+   in BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in
+   all capitals, as shown here.
+
+   The following terms are used throughout this document:
+
+   Origin:  The authoritative server for a site under its canonical
+      domain name, operated by or on behalf of the site's author.
+
+   Author:  The individual or organization that controls a site's
+      content and holds its signing key.
+
+   Preservation Manifest:  A signed, versioned document published by
+      an author describing a site's complete asset graph and
+      preservation terms.  See Section 3.
+
+   Mirror:  A server authorized by an author's manifest to serve a
+      complete copy of the site's content.
+
+   Mirror Operator:  An individual or organization that operates a
+      Mirror on behalf of an author.
+
+   MIRROR RR:  A DNS resource record type defined in this document
+      that associates a domain with one or more authorized mirrors and
+      specifies failover conditions.
+
+   Asset Graph:  The complete set of resources comprising a site,
+      including their content hashes, metadata, and inter-resource
+      relationships.
+
+   Succession Terms:  Author-specified conditions and permissions
+      governing mirror activation and content licensing after the
+      origin becomes unavailable.
+
+   Liveness Check:  A protocol-defined mechanism by which authorized
+      parties periodically verify that an origin is reachable and
+      serving content consistent with its current manifest.
+
+
+2.  Protocol Overview
+
+   A Meridian-enabled site operates as follows:
+
+   1.  The author generates an Ed25519 signing keypair.  The public key
+       is published in the Preservation Manifest and optionally in a
+       MIRROR DNS RR.
+
+   2.  The author publishes a Preservation Manifest at the well-known
+       URI defined in Section 3.1.  The manifest describes the site's
+       complete asset graph, authorizes specific mirrors by their
+       public keys, and specifies succession terms.
+
+   3.  Authorized mirrors subscribe to the manifest endpoint via WebSub
+       [RFC8030] and synchronize the site's content incrementally using
+       the delta-sync mechanism defined in Section 4.
+
+   4.  The author publishes one or more MIRROR RRs in their zone,
+       listing authorized mirrors in priority order and specifying
+       liveness-check parameters.
+
+   5.  Authoritative DNS operators, Meridian-aware clients, or external
+       monitoring systems perform liveness checks against the origin.
+
+   6.  When failover conditions are met per Section 5.3, these systems
+       direct resolution or connection attempts to authorized mirrors.
+
+   7.  Mirrors serve content for the canonical domain.  Clients verify
+       content integrity against the author's signed manifest.  The
+       author's original URLs continue to resolve.
+
+
+3.  The Preservation Manifest
+
+3.1.  Well-Known Endpoint
+
+   An origin supporting Meridian MUST publish its Preservation Manifest
+   at the following well-known URI [RFC8615]:
+
+      /.well-known/meridian/manifest.json
+
+   The manifest MUST be served with Content-Type
+   application/meridian-manifest+json and MUST be retrievable via
+   HTTPS.  The manifest SHOULD also be retrievable via HTTP for
+   resilience during partial infrastructure failures, but the HTTPS
+   version is authoritative.
+
+   Mirrors MUST serve the manifest at the same well-known URI under the
+   canonical domain when operating in failover mode.
+
+
+3.2.  Manifest Format
+
+   The Preservation Manifest is a JSON document with the following
+   top-level structure:
+
+      {
+        "meridian": "1.0",
+        "domain": "example.com",
+        "created": "2026-03-22T00:00:00Z",
+        "updated": "2026-03-22T00:00:00Z",
+        "author": {
+          "name": "Author Name",
+          "contact": "author@example.com",
+          "public_key": "<base64url-encoded Ed25519 public key>"
+        },
+        "mirrors": [ "<mirror-entry>", "..." ],
+        "assets": { "<asset-graph>": true },
+        "succession": { "<succession-terms>": true },
+        "signature": "<base64url-encoded Ed25519 signature>"
+      }
+
+   The "meridian" field specifies the protocol version.  This document
+   defines version "1.0".
+
+   The "domain" field is the canonical domain name of the site.
+
+   The "created" and "updated" fields are ISO 8601 timestamps in UTC.
+
+   The "signature" field contains the Ed25519 signature over the
+   canonical JSON serialization of all other fields, with keys sorted
+   lexicographically and no insignificant whitespace.  Implementations
+   MUST verify this signature before trusting any manifest content.
+
+
+3.3.  Asset Graph
+
+   The "assets" field contains a map from canonical relative URL paths
+   to asset descriptors:
+
+      {
+        "/index.html": {
+          "sha256": "<hex-encoded SHA-256 of content>",
+          "size": 4096,
+          "content_type": "text/html",
+          "updated": "2026-03-22T00:00:00Z",
+          "cid": "<IPFS CIDv1, optional>"
+        },
+        "/gallery/stone-001.jpg": {
+          "sha256": "<hex-encoded SHA-256 of content>",
+          "size": 2097152,
+          "content_type": "image/jpeg",
+          "updated": "2026-01-15T00:00:00Z",
+          "cid": "<IPFS CIDv1, optional>"
+        }
+      }
+
+   The "sha256" field is REQUIRED.  Mirrors MUST verify each asset
+   against its declared hash after retrieval and MUST NOT serve assets
+   that fail verification.
+
+   The "cid" field is OPTIONAL and enables content retrieval via IPFS
+   as an alternative transport.  When present, mirrors MAY retrieve
+   assets from IPFS in addition to or instead of HTTP.
+
+   The asset graph defines a Merkle tree over site content.  The
+   manifest's root hash is the hash of the lexicographically ordered
+   concatenation of all asset SHA-256 values and is implicitly covered
+   by the manifest signature.
+
+   Large sites MAY partition the asset graph into multiple manifests or
+   use paginated representations, provided each partition is
+   individually signed and a deterministic method exists to derive a
+   consistent root hash across all partitions.  The mechanism for
+   partitioned manifests is left to a future revision of this document.
+
+
+3.4.  Manifest Signing
+
+   Authors MUST sign manifests using Ed25519 [RFC8032].  The signing
+   key MUST be generated and stored securely by the author.  This
+   document does not specify key storage requirements, but authors
+   SHOULD follow applicable best practices for long-term key custody,
+   including offline backup and succession planning for the private key
+   itself.
+
+   Mirror operators and clients MUST reject manifests with invalid
+   signatures.  Mirror operators MUST NOT serve content whose asset
+   hashes do not match the signed manifest.
+
+   Authors SHOULD rotate signing keys periodically.  Key rotation is
+   performed by publishing a new manifest signed by the new key,
+   counter-signed by the old key, with both public keys present in the
+   "author" field during the transition period.
+
+
+3.5.  Succession Terms
+
+   The "succession" field specifies the conditions and permissions
+   governing mirror behavior after origin failure:
+
+      {
+        "license": "https://creativecommons.org/licenses/by-nc/4.0/",
+        "commercial_use": false,
+        "modification": false,
+        "attribution_required": true,
+        "attribution_text": "Works of Author Name",
+        "failover_grace_days": 30,
+        "designated_steward": {
+          "name": "Steward Organization",
+          "contact": "steward@example.org",
+          "public_key": "<base64url-encoded Ed25519 public key>"
+        }
+      }
+
+   The "license" field is a URL pointing to the license under which
+   mirrored content may be served after failover.  Authors SHOULD use
+   a standard license URI.
+
+   The "failover_grace_days" field specifies the minimum number of days
+   of confirmed origin unavailability before mirrors MAY activate
+   failover.  The default is 30 days if not specified.
+
+   The "designated_steward" field is OPTIONAL.  When present, the
+   steward's public key may be used to publish manifest updates after
+   the author becomes unavailable, subject to the constraint that
+   stewards MUST NOT alter the asset graph of already-published
+   content.  Stewards MAY add new assets, publish errata, and update
+   succession terms.
+
+
+4.  Delta Synchronization
+
+4.1.  Merkle Tree Construction
+
+   The asset graph defined in Section 3.3 implicitly defines a Merkle
+   tree over the site's content.  Mirrors maintain a local copy of this
+   tree and use it to identify changed, added, and removed assets
+   between manifest versions.
+
+   When a new manifest version is available, a mirror computes the
+   symmetric difference between the new and previous asset graphs and
+   retrieves only changed or added assets.  Removed assets SHOULD be
+   retained locally for a configurable period (default: 90 days) before
+   deletion, to guard against erroneous manifest updates.
+
+
+4.2.  Notification via WebSub
+
+   Origins SHOULD publish manifest update notifications using WebSub
+   [RFC8030].  The WebSub topic URL is the manifest's well-known URI
+   defined in Section 3.1.
+
+   Mirrors SHOULD subscribe to the manifest's WebSub topic to receive
+   push notifications of updates.  In the absence of WebSub
+   notification, mirrors MUST poll the manifest endpoint at intervals
+   not exceeding 24 hours.
+
+
+4.3.  Mirror Pull Semantics
+
+   Upon receiving a manifest update notification or completing a poll
+   interval, a mirror MUST:
+
+   1.  Retrieve the new manifest and verify its signature.
+
+   2.  Verify that the new manifest's "updated" timestamp is strictly
+       greater than the previously seen timestamp.
+
+   3.  Compute the asset diff between the new and previous manifests.
+
+   4.  Retrieve each new or changed asset via HTTPS from the origin, or
+       via IPFS if a CID is present and the mirror supports IPFS.
+
+   5.  Verify each retrieved asset against its declared SHA-256 hash.
+
+   6.  Atomically replace the previous version of each asset with the
+       newly verified version.
+
+   Mirrors MUST NOT serve partially-updated content.  Step 6 MUST be
+   atomic from the perspective of serving clients.
+
+
+5.  The MIRROR DNS Resource Record
+
+5.1.  MIRROR RR Format
+
+   This document defines a new DNS resource record type, MIRROR, with
+   the following wire format:
+
+      Field              Type       Description
+      -----              ----       -----------
+      Priority           uint16     Mirror priority (lower = higher
+                                    priority, analogous to MX)
+      Failover-Grace     uint32     Minimum seconds of confirmed
+                                    unavailability before failover
+      Liveness-Interval  uint32     Liveness check interval in seconds
+      Mirror-FQDN        DNS name   Fully qualified domain name of
+                                    the mirror
+      Public-Key         bytes      Ed25519 public key of the mirror
+                                    operator (32 bytes)
+
+   Example zone file representation:
+
+      example.com.  3600  IN  MIRROR  10 2592000 3600
+                              mirror1.example-archive.org.
+                              <base64-encoded mirror public key>
+
+      example.com.  3600  IN  MIRROR  20 2592000 3600
+                              mirror2.example-archive.net.
+                              <base64-encoded mirror public key>
+
+   Multiple MIRROR RRs for a domain constitute a mirror chain ordered
+   by Priority.
+
+
+5.2.  Liveness Detection
+
+   Liveness is determined by two independent criteria, both of which
+   MUST be satisfied for an origin to be considered live:
+
+   1.  Network reachability: The origin responds to HTTPS requests with
+       a 2xx or 3xx status code within a configurable timeout
+       (default: 10 seconds).
+
+   2.  Manifest consistency: The manifest retrieved from the origin has
+       a "domain" field matching the queried domain and a valid
+       signature.
+
+   Liveness checks MUST be performed by at least three geographically
+   distributed vantage points before a failover determination is made.
+   This document does not specify the mechanism for coordinating
+   distributed liveness checks; implementations MAY use existing
+   monitoring infrastructure.
+
+   Liveness evaluation is expected to be performed by authoritative DNS
+   operators, Meridian-aware clients, or external monitoring systems.
+   This document does not require recursive DNS resolvers to perform
+   liveness detection.
+
+   Liveness check results MUST NOT be used to infer anything about the
+   content or behavior of a site beyond the two criteria above.
+
+
+5.3.  Failover Trigger Conditions
+
+   Failover is triggered when ALL of the following conditions are met:
+
+   1.  The origin has failed liveness checks from at least three
+       independent vantage points continuously for a period not less
+       than the Failover-Grace period specified in the MIRROR RR.
+
+   2.  The Failover-Grace period in the MIRROR RR is consistent with
+       or greater than the "failover_grace_days" value in the most
+       recently retrieved manifest's succession terms.
+
+   3.  At least one mirror in the mirror chain has confirmed possession
+       of a complete, signature-verified copy of the site's content as
+       of the most recently retrieved manifest version.
+
+   When failover is triggered, authoritative DNS operators or
+   equivalent control points SHOULD direct resolution or connection
+   attempts to the highest-priority available mirror.
+
+   Implementations SHOULD continue liveness checks against the origin
+   during failover.  If the origin subsequently passes liveness checks,
+   failover SHOULD be withdrawn after a recovery grace period
+   (default: 48 hours) to allow mirror operators to be notified.
+
+
+5.4.  Mirror Chain Priority
+
+   Mirrors are attempted in ascending Priority order (lowest number
+   first).  If the highest-priority mirror is unavailable, the next
+   mirror in the chain MUST be attempted.
+
+   Mirror availability is determined by the same liveness criteria
+   defined in Section 5.2, applied to the mirror's FQDN rather than
+   the origin.
+
+
+5.5.  Interaction with DNSSEC
+
+   MIRROR RRs SHOULD be included in DNSSEC-signed zones.  Resolvers
+   MUST validate DNSSEC signatures on MIRROR RRs before using them to
+   direct failover traffic.
+
+   The mirror operator's public key in the MIRROR RR MUST match the
+   mirror's entry in the author's Preservation Manifest.  Resolvers
+   SHOULD reject MIRROR RRs whose public keys do not appear in the
+   current manifest.
+
+
+5.6.  Deployment Considerations
+
+   Deployment of new DNS resource record types may be constrained by
+   existing tooling, registrar support, and resolver behavior.
+   Operators SHOULD verify that their DNS provider supports custom RR
+   types before relying on MIRROR RRs in production.
+
+   During early deployment, publishers MAY encode MIRROR record data in
+   DNS TXT records using the following structured representation:
+
+      example.com.  3600  IN  TXT  "meridian=1 pri=10
+                                    grace=2592000 interval=3600
+                                    mirror=mirror1.example-archive.org.
+                                    key=<base64-encoded public key>"
+
+   Implementations MUST prefer MIRROR RRs when present.  TXT-based
+   encodings are transitional and SHOULD NOT be relied upon as a
+   long-term deployment mechanism.
+
+
+6.  Mirror Operator Responsibilities
+
+6.1.  Verification Requirements
+
+   Mirror operators MUST:
+
+   *  Verify the author's manifest signature before accepting any
+      content for mirroring.
+
+   *  Verify each asset's SHA-256 hash upon retrieval.
+
+   *  Maintain their mirror's content in a state consistent with the
+      most recently verified manifest.
+
+   *  Publish their own public key in a manner verifiable by authors
+      and clients.
+
+
+6.2.  Content Integrity
+
+   Mirror operators MUST NOT:
+
+   *  Modify any asset in the mirrored asset graph.
+
+   *  Serve assets whose hashes do not match the signed manifest.
+
+   *  Inject advertising, tracking, or analytics not present in the
+      original content.
+
+   *  Represent mirrored content as their own.
+
+   Mirror operators SHOULD store the underlying WARC representation of
+   mirrored content in addition to the live-serving copy, as a hedge
+   against manifest format evolution and future retrieval needs.
+
+
+6.3.  Succession Handling
+
+   Upon failover activation, mirror operators MUST:
+
+   *  Serve content under the succession terms specified in the
+      manifest, including applicable license terms and attribution
+      requirements.
+
+   *  Make the succession terms publicly accessible via a well-known
+      URI on the mirror.
+
+   *  Contact the designated steward if one is specified in the
+      manifest.
+
+   *  Refrain from altering the asset graph of already-published
+      content.
+
+
+7.  Security Considerations
+
+7.1.  Key Management
+
+   The security of the Meridian Protocol depends entirely on the
+   security of the author's Ed25519 signing key.  Compromise of this
+   key allows an attacker to publish fraudulent manifests authorizing
+   unauthorized mirrors or altering succession terms.
+
+   Authors MUST store private keys securely and SHOULD maintain offline
+   backup copies.  Authors SHOULD designate a trusted steward with
+   knowledge of key recovery procedures.
+
+   This document does not fully specify a key revocation mechanism.
+   Future versions SHOULD address revocation via authenticated
+   channels, including DNS-based signals or successor manifests, and
+   SHOULD address the case where an author's key is compromised
+   posthumously.
+
+
+7.2.  Mirror Substitution Attacks
+
+   An attacker who can modify DNS responses may attempt to substitute a
+   malicious mirror for an authorized one.  DNSSEC validation of MIRROR
+   RRs, combined with client-side verification of mirror public keys
+   against the manifest, mitigates this attack.
+
+   Clients SHOULD verify that a responding mirror's TLS certificate is
+   consistent with its declared FQDN and that its public key matches
+   the MIRROR RR.
+
+
+7.3.  Premature Failover
+
+   A network-level attack that makes an origin appear unreachable from
+   multiple vantage points could trigger premature failover.  The
+   requirement for three independent vantage points and a configurable
+   grace period reduces but does not eliminate this risk.
+
+   Authors who are concerned about premature failover SHOULD set longer
+   Failover-Grace periods and designate a human steward who can
+   intervene.
+
+
+7.4.  Privacy
+
+   Mirror operators necessarily possess a complete copy of all mirrored
+   content, including any content that was publicly accessible but not
+   prominently linked.  Authors SHOULD review their asset graphs
+   carefully before publishing manifests to ensure that unintended
+   content is not included.
+
+   Liveness checks against origins constitute a form of monitoring.
+   Implementations SHOULD minimize the identifying information sent
+   during liveness checks.
+
+   Mirror operators and authors remain subject to applicable law in the
+   jurisdictions in which they operate.  This protocol does not define
+   mechanisms for resolving legal disputes regarding mirrored content.
+
+
+8.  IANA Considerations
+
+8.1.  Well-Known URI Registration
+
+   This document requests registration of the following well-known URI
+   in the "Well-Known URIs" registry [RFC8615]:
+
+      URI suffix:          meridian/manifest.json
+      Change controller:   IETF
+      Specification:       This document, Section 3.1
+
+
+8.2.  MIRROR RR Type Assignment
+
+   This document requests assignment of a DNS resource record type for
+   the MIRROR RR defined in Section 5.1.
+
+
+8.3.  Media Type Registration
+
+   This document requests registration of the following media type:
+
+      Type name:            application
+      Subtype name:         meridian-manifest+json
+      Required parameters:  none
+      Optional parameters:  none
+      Encoding:             UTF-8
+      Specification:        This document, Section 3.2
+
+
+9.  Prior Art and Related Work
+
+   The Meridian Protocol builds on and composes with a substantial body
+   of prior work.  This section documents that lineage.
+
+   HyperCard [HYPERCARD] (Atkinson, 1987) demonstrated the concept of
+   locally-owned, navigable hypermedia stacks with a scripting model
+   accessible to non-programmers.  Meridian is in part an attempt to
+   realize the networked dimension of HyperCard's vision, providing the
+   replication and local ownership that HyperCard's architecture
+   implied but its network layer never delivered.
+
+   The Internet Archive's Heritrix crawler and the WARC format [WARC]
+   provide the foundational infrastructure for web archival.  Meridian
+   defers to WARC for underlying storage and encourages mirror
+   operators to maintain WARC representations.  Meridian adds what WARC
+   does not provide: author consent, cryptographic integrity, and live
+   URL continuity.
+
+   IPFS [IPFS] provides content-addressed distributed storage with
+   cryptographic integrity guarantees.  Meridian optionally uses IPFS
+   CIDs as an alternative asset retrieval transport and inherits its
+   content-addressing properties where used.  Meridian does not require
+   IPFS.
+
+   WebSub [RFC8030], formerly PubSubHubbub, provides push notification
+   of feed updates.  Meridian uses WebSub as its notification mechanism
+   for manifest updates, replacing polling where possible.
+
+   The Dat Protocol and Beaker Browser [DAT] explored peer-to-peer
+   website distribution with author-controlled content signing.
+   Meridian addresses the same problem class but operates within
+   existing DNS and HTTP infrastructure rather than requiring new
+   client software.
+
+   Secure Scuttlebutt [SSB] provides signed, append-only, offline-
+   first log replication.  Meridian's manifest versioning is
+   conceptually similar, constrained to web-native formats and
+   transports.
+
+   DNSSEC [RFC4033] provides cryptographic authentication of DNS
+   responses.  Meridian's MIRROR RR is designed to be carried in
+   DNSSEC-signed zones and inherits DNSSEC's integrity guarantees.
+
+   The Memex [BUSH1945] (Bush, 1945) and Project Xanadu [NELSON]
+   (Nelson, 1960s-) are the conceptual ancestors of all hypertext
+   systems, including HyperCard and the World Wide Web.  The problem
+   Meridian addresses -- that linked documents disappear -- was
+   anticipated by Nelson's concept of transclusion, which assumed
+   permanent addressability of content.  Meridian is a partial,
+   pragmatic realization of that assumption within existing
+   infrastructure.
+
+
+10.  References
+
+10.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in
+              RFC 2119 Key Words", BCP 14, RFC 8174, May 2017.
+
+   [RFC8032]  Josefsson, S. and I. Liusvaara, "Edwards-Curve Digital
+              Signature Algorithm (EdDSA)", RFC 8032, January 2017.
+
+   [RFC8615]  Nottingham, M., "Well-Known Uniform Resource Identifiers
+              (URIs)", RFC 8615, May 2019.
+
+   [RFC8030]  Thomson, M., Damaggio, E., and B. Raymor, "Generic Event
+              Delivery Using HTTP Push", RFC 8030, December 2016.
+
+   [RFC4033]  Arends, R., Austein, R., Larson, M., Massey, D., and
+              S. Rose, "DNS Security Introduction and Requirements",
+              RFC 4033, March 2005.
+
+
+10.2.  Informative References
+
+   [HYPERCARD]
+              Atkinson, W., "HyperCard", Apple Computer, 1987.
+
+   [WARC]     Internet Archive and IIPC, "WARC (Web ARChive) file
+              format specification, version 1.1", 2017.  Also
+              published as ISO 28500:2017.  Available at:
+              https://github.com/iipc/warc-specifications
+
+   [IPFS]     Benet, J., "IPFS - Content Addressed, Versioned, P2P
+              File System", arXiv:1407.3561, July 2014.
+
+   [DAT]      Ogden, M. et al., "The Dat Protocol", 2015.
+              https://datproject.org/
+
+   [SSB]      Tarr, D. et al., "Secure Scuttlebutt Protocol Guide",
+              2019.  https://scuttlebutt.nz/
+
+   [BUSH1945] Bush, V., "As We May Think", The Atlantic Monthly,
+              July 1945.
+
+   [NELSON]   Nelson, T.H., "Complex information processing: a file
+              structure for the complex, the changing and the
+              indeterminate", Proceedings of the 1965 20th national
+              conference, ACM, 1965.
+
+
+11.  Acknowledgements
+
+   The author thanks the FIRST Time Security SIG and FIRST Standards
+   SIG for the intellectual environment in which this work developed,
+   and acknowledges review and feedback received during preparation of
+   this draft.
+
+
+12.  Author's Address
+
+   Trey Darley
+   Proper Tools SRL
+   Brussels, Belgium
+
+   Email: trey@propertools.be
+   URI:   https://propertools.be
