@@ -45,7 +45,9 @@ It does not reinvent WARC, IPFS, WebSub, or DNSSEC. It composes them. It adds wh
 
 This is an early-stage Internet-Draft. The protocol is stable enough for discussion and early prototyping, but not yet suitable for production deployment. It has been shared with members of the IETF community and is being developed in the open.
 
-Critical feedback is welcome.
+Critical feedback is welcome. We do not claim completion, sufficiency, or perfection. If you see a way to do something more elegantly, say so.
+
+We are trying to build the system that would have deserved Bill's trust.
 
 ---
 
