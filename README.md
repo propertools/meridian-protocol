@@ -1,26 +1,18 @@
 # Meridian Protocol
-
 **Web Preservation, Mirroring, and DNS Failover**
-
 `draft-darley-meridian-protocol-01`
 
 ---
 
 ## Background
 
-See: [https://propertools.be/fieldwork/field-note-8-the-stack-that-should-have-been-networked/](Field Note #8 — The Stack That Should Have Been Networked)
+This protocol is introduced in [Field Note #8 — The Stack That Should Have Been Networked](https://propertools.be/fieldwork/field-note-8-the-stack-that-should-have-been-networked/).
 
 ---
 
 ## Problem
 
-The web has no native mechanism for:
-
-- Author-authorized preservation
-- Verifiable mirroring
-- Continuity at canonical URLs after origin failure
-
-When a domain lapses, a server is decommissioned, or an author dies, content disappears from its canonical URLs without recourse.
+The web has no native mechanism for author-authorized preservation, verifiable mirroring, or continuity at canonical URLs after origin failure. When a domain lapses, a server is decommissioned, or an author dies, content disappears from its canonical URLs without recourse.
 
 Meridian proposes three minimal, composable pieces to address this:
 
@@ -28,41 +20,32 @@ Meridian proposes three minimal, composable pieces to address this:
 - A **delta-synchronisation mechanism** — so authorised mirrors stay current with minimal bandwidth
 - A **new DNS resource record type (MIRROR RR)** — supporting automatic failover to live mirrors when an origin becomes unavailable
 
+```
 Author → Manifest → Mirrors
-           ↓
-        DNS (MIRROR RR)
-           ↓
-        Clients
+                        ↓
+                 DNS (MIRROR RR)
+                        ↓
+                     Clients
+```
 
 It does not reinvent WARC, IPFS, WebSub, or DNSSEC. It composes them. It adds what they do not provide: prospective author consent, signed asset integrity, and URL continuity after origin failure.
 
 ---
 
-## Current draft
+## Current Draft
 
 [`draft-darley-meridian-protocol-01.txt`](./draft-darley-meridian-protocol-01.txt)
 
-Intended status: Proposed Standard
-Expires: 2026-09-27
+- **Intended status:** Proposed Standard
+- **Expires:** 2026-09-27
 
 ---
 
 ## Status
 
-This is an early-stage Internet-Draft (draft-00/01).
+This is an early-stage Internet-Draft. The protocol is stable enough for discussion and early prototyping, but not yet suitable for production deployment. It has been shared with members of the IETF community and is being developed in the open.
 
-The protocol is stable enough for discussion and early prototyping,
-but not yet suitable for production deployment.
-
-It has been shared with members of the IETF community and is being developed in the open.
-
-**This is an early draft circulated for review and comment.**
-
-We are actively seeking:
-
-- **Co-authors** — particularly those with experience in DNS, web archival, digital preservation, or infrastructure standards
-- **Implementers** — anyone interested in building prototype implementations of the manifest format, delta-sync, or MIRROR RR
-- **Mirror operators** — organisations willing to operate authorised mirrors as the protocol matures
+Critical feedback is welcome.
 
 ---
 
@@ -70,17 +53,17 @@ We are actively seeking:
 
 We are actively seeking:
 
-- Reviewers (DNS, web archival, security, standards)
-- Prototype implementers
-- Mirror operators (experimental)
+- **Co-authors** — particularly those with experience in DNS, web archival, digital preservation, or infrastructure standards
+- **Implementers** — anyone interested in building prototype implementations of the manifest format, delta-sync, or MIRROR RR
+- **Mirror operators** — organisations willing to operate authorised mirrors as the protocol matures
+- **Reviewers** — DNS, web archival, security, and standards perspectives all welcome
 
-Start here:
-- Read the draft
-- Open an issue to raise a question, flag a problem, or propose a change
-- See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to contribute
-- Contact the author at [trey@propertools.be](mailto:trey@propertools.be)
+To contribute:
 
-This is an early-stage protocol. Critical feedback is welcome.
+1. Read the draft
+2. Open an issue to raise a question, flag a problem, or propose a change
+3. See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines
+4. Or contact the author directly at [trey@propertools.be](mailto:trey@propertools.be)
 
 More information at [propertools.be/commons/](https://propertools.be/commons/)
 
