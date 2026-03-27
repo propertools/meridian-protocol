@@ -8,7 +8,7 @@
 
 ## Background
 
-See: (https://propertools.be/fieldwork/field-note-8-the-stack-that-should-have-been-networked/)[Field Note #8 — The Stack That Should Have Been Networked]
+See: [https://propertools.be/fieldwork/field-note-8-the-stack-that-should-have-been-networked/](Field Note #8 — The Stack That Should Have Been Networked)
 
 ---
 
