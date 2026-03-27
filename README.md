@@ -6,13 +6,33 @@
 
 ---
 
-The World Wide Web has no native mechanism for prospective preservation. When a domain lapses, a server is decommissioned, or an author dies, content disappears from its canonical URLs without recourse.
+## Background
 
-Meridian proposes three composable pieces:
+See: (https://propertools.be/fieldwork/field-note-8-the-stack-that-should-have-been-networked/)[Field Note #8 — The Stack That Should Have Been Networked]
+
+---
+
+## Problem
+
+The web has no native mechanism for:
+
+- Author-authorized preservation
+- Verifiable mirroring
+- Continuity at canonical URLs after origin failure
+
+When a domain lapses, a server is decommissioned, or an author dies, content disappears from its canonical URLs without recourse.
+
+Meridian proposes three minimal, composable pieces to address this:
 
 - A **signed site manifest format** — a cryptographically verifiable asset graph authored and signed by the site owner
 - A **delta-synchronisation mechanism** — so authorised mirrors stay current with minimal bandwidth
 - A **new DNS resource record type (MIRROR RR)** — supporting automatic failover to live mirrors when an origin becomes unavailable
+
+Author → Manifest → Mirrors
+           ↓
+        DNS (MIRROR RR)
+           ↓
+        Clients
 
 It does not reinvent WARC, IPFS, WebSub, or DNSSEC. It composes them. It adds what they do not provide: prospective author consent, signed asset integrity, and URL continuity after origin failure.
 
@@ -29,7 +49,14 @@ Expires: 2026-09-27
 
 ## Status
 
-This is an early draft circulated for review and comment. It has been shared with members of the IETF community and is being developed in the open.
+This is an early-stage Internet-Draft (draft-00/01).
+
+The protocol is stable enough for discussion and early prototyping,
+but not yet suitable for production deployment.
+
+It has been shared with members of the IETF community and is being developed in the open.
+
+**This is an early draft circulated for review and comment.**
 
 We are actively seeking:
 
@@ -39,13 +66,23 @@ We are actively seeking:
 
 ---
 
-## Getting involved
+## Getting Involved
 
+We are actively seeking:
+
+- Reviewers (DNS, web archival, security, standards)
+- Prototype implementers
+- Mirror operators (experimental)
+
+Start here:
+- Read the draft
 - Open an issue to raise a question, flag a problem, or propose a change
 - See [CONTRIBUTING.md](./CONTRIBUTING.md) for how to contribute
 - Contact the author at [trey@propertools.be](mailto:trey@propertools.be)
 
-More information at [propertools.be/commons/meridian/](https://propertools.be/commons/meridian/)
+This is an early-stage protocol. Critical feedback is welcome.
+
+More information at [propertools.be/commons/](https://propertools.be/commons/)
 
 ---
 
