@@ -4,6 +4,14 @@
 
 ---
 
+## Dedication
+
+This protocol is dedicated to the memory of **William Dana Atkinson** (1951–2025), creator of HyperCard, who demonstrated that ordinary people could author rich, navigable hypermedia systems and who gave his creation to the world without reservation. The network layer Bill wished he had built is long overdue.
+
+And to the memory of **Aaron Swartz** (1986–2013), who believed that knowledge on the web should be free and permanent, and paid for that belief.
+
+---
+
 ## Background
 
 This protocol is introduced in [Field Note #8 — The Stack That Should Have Been Networked](https://propertools.be/fieldwork/field-note-8-the-stack-that-should-have-been-networked/).
@@ -47,7 +55,7 @@ This is an early-stage Internet-Draft. The protocol is stable enough for discuss
 
 Critical feedback is welcome. We do not claim completion, sufficiency, or perfection. If you see a way to do something more elegantly, say so.
 
-We are trying to build the system that would have deserved Bill's trust.
+We are trying to build the system that would have deserved Bill and Aaron's trust.
 
 ---
 
@@ -68,14 +76,6 @@ To contribute:
 4. Or contact the author directly at [trey@propertools.be](mailto:trey@propertools.be)
 
 More information at [propertools.be/commons/](https://propertools.be/commons/)
-
----
-
-## Dedication
-
-This protocol is dedicated to the memory of **William Dana Atkinson** (1951–2025), creator of HyperCard, who demonstrated that ordinary people could author rich, navigable hypermedia systems and who gave his creation to the world without reservation. The network layer Bill wished he had built is long overdue.
-
-And to the memory of **Aaron Swartz** (1986–2013), who believed that knowledge on the web should be free and permanent, and paid for that belief.
 
 ---
 
